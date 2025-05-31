@@ -4,10 +4,10 @@ spec:
       default: build
       description: "Define the stage this job will run in"
     docker_version:
-      default: "27.4.0-rc.1"
+      default: "28.2.2"
       description: "Define the version of Docker to use"
     buildkit_version:
-      default: "v0.17.1"
+      default: "v0.22.0"
       description: "Define the version of BuildKit to use"
 ---
 
@@ -23,7 +23,7 @@ spec:
     FF_SCRIPT_SECTIONS: "true" # Enables GitLab's CI script sections for better multi-line script output
     DOCKER_BUILDKIT: 1
     DOCKER_CONTENT_TRUST: 1
-    DOCKER_BUILDX_VERSION: v0.18.0
+    DOCKER_BUILDX_VERSION: v0.24.0
     BUILDX_GIT_LABELS: 1
   id_tokens:
     SIGSTORE_ID_TOKEN: # Used by Cosign to get certificate from Fulcio
