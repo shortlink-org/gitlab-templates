@@ -111,11 +111,10 @@ drop:
   variables:
     NAMESPACE: "$[[ inputs.namespace ]]"
     RELEASE_NAME: "$[[ inputs.release_name ]]"
-    PROVIDER: "$[[ inputs.provider ]]"
   script:
     - helm del -n "${NAMESPACE}" "${RELEASE_NAME}"
   needs: []
   environment:
-    name: "${PROVIDER}/${RELEASE_NAME}"
+    name: "$[[ inputs.provider ]]/$[[ inputs.release_name ]]"
     action: stop
   when: manual
