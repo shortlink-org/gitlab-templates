@@ -23,7 +23,6 @@ spec:
     environment_url:
       default: ""
       description: "Optional environment URL"
-
 ---
 
 include:
@@ -39,45 +38,56 @@ deploy:
   tags:
     - gitlab-org-docker
   stage: deploy
+  before_script:
+    - export PROVIDER="$[[ inputs.provider ]]"
+    - export NAMESPACE="$[[ inputs.namespace ]]"
+    - export RELEASE_NAME="$[[ inputs.release_name ]]"
+    - export HELM_PATH="$[[ inputs.helm_path ]]"
+    - export HELM_ARG="$[[ inputs.helm_arg ]]"
+    - export KUBE_CONTEXT="$[[ inputs.kube_context ]]"
+    - export ENVIRONMENT_URL="$[[ inputs.environment_url ]]"
   script:
     - |
       set -e
       VALUE_FILES=""
 
-      # Check if there are any .values.yaml files
-      if ls $[[ inputs.helm_path ]]/*.values.yaml 1> /dev/null 2>&1; then
-          for file in $[[ inputs.helm_path ]]/*.values.yaml; do
+      if ls ${HELM_PATH}/*.values.yaml 1> /dev/null 2>&1; then
+          for file in ${HELM_PATH}/*.values.yaml; do
               VALUE_FILES="$VALUE_FILES -f $file"
           done
       else
-          echo "No .values.yaml files found in $[[ inputs.helm_path ]]."
+          echo "No .values.yaml files found in ${HELM_PATH}."
       fi
-    - helm secrets upgrade $[[ inputs.release_name ]] $[[ inputs.helm_path ]] $[[ inputs.helm_arg ]] $VALUE_FILES \
-      --kube-context=$[[ inputs.kube_context ]] \
+
+    - helm secrets upgrade "${RELEASE_NAME}" "${HELM_PATH}" ${HELM_ARG} ${VALUE_FILES} \
+      --kube-context="${KUBE_CONTEXT}" \
       --install \
       --atomic \
       --cleanup-on-fail \
       --wait-for-jobs \
-      --namespace=$[[ inputs.namespace ]] \
+      --namespace="${NAMESPACE}" \
       --create-namespace=true \
-      --set deploy.image.tag=$CI_COMMIT_TAG \
-      --set deploy.image.repository=$REGISTRY \
-      --set deploy.annotations."app\.gitlab\.com\/app"=$CI_PROJECT_PATH_SLUG,deploy.annotations."app\.gitlab\.com\/env"=$CI_ENVIRONMENT_SLUG
+      --set deploy.image.tag="${CI_COMMIT_TAG}" \
+      --set deploy.image.repository="${REGISTRY}" \
+      --set deploy.annotations."app\.gitlab\.com\/app"="${CI_PROJECT_PATH_SLUG}",deploy.annotations."app\.gitlab\.com\/env"="${CI_ENVIRONMENT_SLUG}"
   environment:
-    name: $[[ inputs.provider ]]/$[[ inputs.release_name ]]
+    name: "$[[ inputs.provider ]]/$[[ inputs.release_name ]]"
     deployment_tier: production
-    url: $[[ inputs.environment_url ]]
+    url: "$[[ inputs.environment_url ]]"
     on_stop: drop
     kubernetes:
-      namespace: $[[ inputs.namespace ]]
+      namespace: "$[[ inputs.namespace ]]"
 
-# action ===============================================================================================================
+# actions ===============================================================================================================
 
 rollback:
   extends:
     - .job_template_helm
+  before_script:
+    - export NAMESPACE="$[[ inputs.namespace ]]"
+    - export RELEASE_NAME="$[[ inputs.release_name ]]"
   script:
-    - helm --namespace=$[[ inputs.namespace ]] rollback $[[ inputs.release_name ]] 0
+    - helm --namespace="${NAMESPACE}" rollback "${RELEASE_NAME}" 0
   needs:
     - job: deploy
   when: manual
@@ -85,8 +95,11 @@ rollback:
 history:
   extends:
     - .job_template_helm
+  before_script:
+    - export NAMESPACE="$[[ inputs.namespace ]]"
+    - export RELEASE_NAME="$[[ inputs.release_name ]]"
   script:
-    - helm --namespace=$[[ inputs.namespace ]] history $[[ inputs.release_name ]]
+    - helm --namespace="${NAMESPACE}" history "${RELEASE_NAME}"
   needs:
     - job: deploy
   when: manual
@@ -94,10 +107,14 @@ history:
 drop:
   extends:
     - .job_template_helm
+  before_script:
+    - export NAMESPACE="$[[ inputs.namespace ]]"
+    - export RELEASE_NAME="$[[ inputs.release_name ]]"
+    - export PROVIDER="$[[ inputs.provider ]]"
   script:
-    - helm del -n $[[ inputs.namespace ]] $[[ inputs.release_name ]]
+    - helm del -n "${NAMESPACE}" "${RELEASE_NAME}"
   needs: []
   environment:
-    name: $[[ inputs.provider ]]/$[[ inputs.release_name ]]
+    name: "${PROVIDER}/${RELEASE_NAME}"
     action: stop
   when: manual
