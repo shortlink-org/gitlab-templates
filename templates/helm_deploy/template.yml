@@ -38,27 +38,25 @@ deploy:
   tags:
     - gitlab-org-docker
   stage: deploy
-  before_script:
-    - export PROVIDER="$[[ inputs.provider ]]"
-    - export NAMESPACE="$[[ inputs.namespace ]]"
-    - export RELEASE_NAME="$[[ inputs.release_name ]]"
-    - export HELM_PATH="$[[ inputs.helm_path ]]"
-    - export HELM_ARG="$[[ inputs.helm_arg ]]"
-    - export KUBE_CONTEXT="$[[ inputs.kube_context ]]"
-    - export ENVIRONMENT_URL="$[[ inputs.environment_url ]]"
+  variables:
+    PROVIDER: "$[[ inputs.provider ]]"
+    NAMESPACE: "$[[ inputs.namespace ]]"
+    RELEASE_NAME: "$[[ inputs.release_name ]]"
+    HELM_PATH: "$[[ inputs.helm_path ]]"
+    HELM_ARG: "$[[ inputs.helm_arg ]]"
+    ENVIRONMENT_URL: "$[[ inputs.environment_url ]]"
+    KUBE_CONTEXT: "shortlink-org/shortlink:$[[ inputs.provider ]]"
   script:
     - |
       set -e
       VALUE_FILES=""
-
       if ls ${HELM_PATH}/*.values.yaml 1> /dev/null 2>&1; then
-          for file in ${HELM_PATH}/*.values.yaml; do
-              VALUE_FILES="$VALUE_FILES -f $file"
-          done
+        for file in ${HELM_PATH}/*.values.yaml; do
+          VALUE_FILES="$VALUE_FILES -f $file"
+        done
       else
-          echo "No .values.yaml files found in ${HELM_PATH}."
+        echo "No .values.yaml files found in ${HELM_PATH}."
       fi
-
     - helm secrets upgrade "${RELEASE_NAME}" "${HELM_PATH}" ${HELM_ARG} ${VALUE_FILES} \
       --kube-context="${KUBE_CONTEXT}" \
       --install \
@@ -83,9 +81,10 @@ deploy:
 rollback:
   extends:
     - .job_template_helm
-  before_script:
-    - export NAMESPACE="$[[ inputs.namespace ]]"
-    - export RELEASE_NAME="$[[ inputs.release_name ]]"
+  stage: action
+  variables:
+    NAMESPACE: "$[[ inputs.namespace ]]"
+    RELEASE_NAME: "$[[ inputs.release_name ]]"
   script:
     - helm --namespace="${NAMESPACE}" rollback "${RELEASE_NAME}" 0
   needs:
@@ -95,9 +94,10 @@ rollback:
 history:
   extends:
     - .job_template_helm
-  before_script:
-    - export NAMESPACE="$[[ inputs.namespace ]]"
-    - export RELEASE_NAME="$[[ inputs.release_name ]]"
+  stage: action
+  variables:
+    NAMESPACE: "$[[ inputs.namespace ]]"
+    RELEASE_NAME: "$[[ inputs.release_name ]]"
   script:
     - helm --namespace="${NAMESPACE}" history "${RELEASE_NAME}"
   needs:
@@ -107,13 +107,15 @@ history:
 drop:
   extends:
     - .job_template_helm
-  before_script:
-    - export NAMESPACE="$[[ inputs.namespace ]]"
-    - export RELEASE_NAME="$[[ inputs.release_name ]]"
+  stage: action
+  variables:
+    NAMESPACE: "$[[ inputs.namespace ]]"
+    RELEASE_NAME: "$[[ inputs.release_name ]]"
+    PROVIDER: "$[[ inputs.provider ]]"
   script:
     - helm del -n "${NAMESPACE}" "${RELEASE_NAME}"
   needs: []
   environment:
-    name: "$[[ inputs.provider ]]/$[[ inputs.release_name ]]"
+    name: "${PROVIDER}/${RELEASE_NAME}"
     action: stop
   when: manual
