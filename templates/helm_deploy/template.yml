@@ -1,3 +1,35 @@
+spec:
+  inputs:
+    provider:
+      required: true
+      description: "Kube context provider (e.g., contabo)"
+
+    namespace:
+      required: true
+      description: "Kubernetes namespace"
+
+    release_name:
+      required: true
+      description: "Helm release name"
+
+    helm_path:
+      required: true
+      description: "Path to Helm chart"
+
+    helm_arg:
+      default: ""
+      description: "Additional Helm args (e.g., -f values.sops.yaml)"
+
+    kube_context:
+      default: shortlink-org/shortlink:$[[ inputs.provider ]]
+      description: "Fully qualified kube context"
+
+    environment_url:
+      default: ""
+      description: "Optional environment URL"
+
+---
+
 include:
   - component: $CI_SERVER_FQDN/shortlink-org/gitlab-templates/helm@main
 
@@ -18,31 +50,31 @@ deploy:
       VALUE_FILES=""
 
       # Check if there are any .values.yaml files
-      if ls ${HELM_PATH}/*.values.yaml 1> /dev/null 2>&1; then
-          for file in ${HELM_PATH}/*.values.yaml; do
+      if ls $[[ inputs.helm_path ]]/*.values.yaml 1> /dev/null 2>&1; then
+          for file in $[[ inputs.helm_path ]]/*.values.yaml; do
               VALUE_FILES="$VALUE_FILES -f $file"
           done
       else
-          echo "No .values.yaml files found in ${HELM_PATH}."
+          echo "No .values.yaml files found in $[[ inputs.helm_path ]]."
       fi
-    - helm secrets upgrade $RELEASE_NAME $HELM_PATH $HELM_ARG $VALUE_FILES
-      --kube-context=shortlink-org/shortlink:${PROVIDER}
-      --install
-      --atomic
-      --cleanup-on-fail
-      --wait-for-jobs
-      --namespace=$HELM_NAMESPACE
-      --create-namespace=true
-      --set deploy.image.tag=$CI_COMMIT_TAG
-      --set deploy.image.repository=$REGISTRY
-      --set deploy.annotations."app\.gitlab\.com\/app"=$CI_PROJECT_PATH_SLUG,deploy.annotations."app\.gitlab\.com\/env"=$CI_ENVIRONMENT_SLUG;
+    - helm secrets upgrade $[[ inputs.release_name ]] $[[ inputs.helm_path ]] $[[ inputs.helm_arg ]] $VALUE_FILES \
+      --kube-context=$[[ inputs.kube_context ]] \
+      --install \
+      --atomic \
+      --cleanup-on-fail \
+      --wait-for-jobs \
+      --namespace=$[[ inputs.namespace ]] \
+      --create-namespace=true \
+      --set deploy.image.tag=$CI_COMMIT_TAG \
+      --set deploy.image.repository=$REGISTRY \
+      --set deploy.annotations."app\.gitlab\.com\/app"=$CI_PROJECT_PATH_SLUG,deploy.annotations."app\.gitlab\.com\/env"=$CI_ENVIRONMENT_SLUG
   environment:
-    name: ${PROVIDER}/${RELEASE_NAME}
+    name: $[[ inputs.provider ]]/$[[ inputs.release_name ]]
     deployment_tier: production
-    url: $ENVIRONMENT_URL
+    url: $[[ inputs.environment_url ]]
     on_stop: drop
     kubernetes:
-      namespace: ${HELM_NAMESPACE}
+      namespace: $[[ inputs.namespace ]]
 
 # action ===============================================================================================================
 
@@ -50,7 +82,7 @@ rollback:
   extends:
     - .job_template_helm
   script:
-    - helm --namespace=$HELM_NAMESPACE rollback $RELEASE_NAME 0
+    - helm --namespace=$[[ inputs.namespace ]] rollback $[[ inputs.release_name ]] 0
   needs:
     - job: deploy
   when: manual
@@ -59,7 +91,7 @@ history:
   extends:
     - .job_template_helm
   script:
-    - helm --namespace=$HELM_NAMESPACE history $RELEASE_NAME
+    - helm --namespace=$[[ inputs.namespace ]] history $[[ inputs.release_name ]]
   needs:
     - job: deploy
   when: manual
@@ -68,9 +100,9 @@ drop:
   extends:
     - .job_template_helm
   script:
-    - helm del -n $HELM_NAMESPACE $RELEASE_NAME;
+    - helm del -n $[[ inputs.namespace ]] $[[ inputs.release_name ]]
   needs: []
   environment:
-    name: ${PROVIDER}/${RELEASE_NAME}
+    name: $[[ inputs.provider ]]/$[[ inputs.release_name ]]
     action: stop
   when: manual
