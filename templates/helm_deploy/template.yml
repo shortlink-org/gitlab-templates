@@ -50,6 +50,7 @@ deploy:
     - |
       set -e
       VALUE_FILES=""
+
       if ls ${HELM_PATH}/*.values.yaml 1> /dev/null 2>&1; then
         for file in ${HELM_PATH}/*.values.yaml; do
           VALUE_FILES="$VALUE_FILES -f $file"
@@ -57,17 +58,18 @@ deploy:
       else
         echo "No .values.yaml files found in ${HELM_PATH}."
       fi
-    - helm secrets upgrade "${RELEASE_NAME}" "${HELM_PATH}" ${HELM_ARG} ${VALUE_FILES} \
-      --kube-context="${KUBE_CONTEXT}" \
-      --install \
-      --atomic \
-      --cleanup-on-fail \
-      --wait-for-jobs \
-      --namespace="${NAMESPACE}" \
-      --create-namespace=true \
-      --set deploy.image.tag="${CI_COMMIT_TAG}" \
-      --set deploy.image.repository="${REGISTRY}" \
-      --set deploy.annotations."app\.gitlab\.com\/app"="${CI_PROJECT_PATH_SLUG}",deploy.annotations."app\.gitlab\.com\/env"="${CI_ENVIRONMENT_SLUG}"
+
+      helm secrets upgrade "${RELEASE_NAME}" "${HELM_PATH}" ${HELM_ARG} ${VALUE_FILES} \
+        --kube-context="${KUBE_CONTEXT}" \
+        --install \
+        --atomic \
+        --cleanup-on-fail \
+        --wait-for-jobs \
+        --namespace="${NAMESPACE}" \
+        --create-namespace=true \
+        --set deploy.image.tag="${CI_COMMIT_TAG}" \
+        --set deploy.image.repository="${REGISTRY}" \
+        --set deploy.annotations."app\.gitlab\.com\/app"="${CI_PROJECT_PATH_SLUG}",deploy.annotations."app\.gitlab\.com\/env"="${CI_ENVIRONMENT_SLUG}"
   environment:
     name: "$[[ inputs.provider ]]/$[[ inputs.release_name ]]"
     deployment_tier: production
