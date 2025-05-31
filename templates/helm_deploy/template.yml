@@ -110,11 +110,10 @@ drop:
   before_script:
     - export NAMESPACE="$[[ inputs.namespace ]]"
     - export RELEASE_NAME="$[[ inputs.release_name ]]"
-    - export PROVIDER="$[[ inputs.provider ]]"
   script:
     - helm del -n "${NAMESPACE}" "${RELEASE_NAME}"
   needs: []
   environment:
-    name: "${PROVIDER}/${RELEASE_NAME}"
+    name: "$[[ inputs.provider ]]/$[[ inputs.release_name ]]"
     action: stop
   when: manual
