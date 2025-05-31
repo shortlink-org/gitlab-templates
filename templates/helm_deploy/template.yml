@@ -1,19 +1,15 @@
 spec:
   inputs:
     provider:
-      required: true
       description: "Kube context provider (e.g., contabo)"
 
     namespace:
-      required: true
       description: "Kubernetes namespace"
 
     release_name:
-      required: true
       description: "Helm release name"
 
     helm_path:
-      required: true
       description: "Path to Helm chart"
 
     helm_arg:
