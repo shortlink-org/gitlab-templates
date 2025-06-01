@@ -16,5 +16,3 @@
   allow_failure: true
   tags:
     - gitlab-org-docker
-  rules:
-    - when: manual
