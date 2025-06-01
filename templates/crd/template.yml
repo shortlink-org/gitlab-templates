@@ -1,5 +1,4 @@
 .crd_templates:
-  stage: $[[ inputs.stage ]]
   image:
     name: alpine/k8s:1.33.0
     entrypoint: [ "" ]
@@ -11,7 +10,7 @@
       --applyset=crd-${APPLYSET}
       --force-conflicts
       --server-side
-      --context=shortlink-org/shortlink:${PROVIDER}
+      --context=${KUBE_CONTEXT}
       --validate=false
       -f ${NAME}
   allow_failure: true
