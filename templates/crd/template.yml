@@ -14,5 +14,7 @@
       --validate=false
       -f ${NAME}
   allow_failure: true
+  tags:
+    - gitlab-org-docker
   rules:
     - when: manual
