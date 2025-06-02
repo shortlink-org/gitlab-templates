@@ -14,7 +14,7 @@ spec:
 stages:
     - deploy
 
-.crd_apply:
+crd_apply:
   stage: deploy
   image:
     name: alpine/k8s:1.33.0        # pin digest in production
