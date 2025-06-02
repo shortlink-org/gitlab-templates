@@ -1,18 +1,32 @@
-.crd_templates:
+spec:
+  inputs:
+    kube_context:
+      description: "kubectl context (kubeconfig entry) to target"
+    applyset:
+      description: "Suffix for the ApplySet label"
+      default: "default"
+    manifest:
+      description: "Path (file or directory) of CRD manifests"
+      default: "k8s"
+
+---
+
+.crd_apply:
   image:
-    name: alpine/k8s:1.33.0
+    name: alpine/k8s:1.33.0        # pin digest in production
     entrypoint: [ "" ]
   script:
     - export KUBECTL_APPLYSET=true
-    - kubectl apply
-      -n default
-      --prune
-      --applyset=crd-${APPLYSET}
-      --force-conflicts
-      --server-side
-      --context=${KUBE_CONTEXT}
-      --validate=false
-      -f ${NAME}
+    - echo "Applying CRDs with applyset=crd-$[[ inputs.applyset ]]"
+    - kubectl apply \
+      -n default \
+      --prune \
+      --applyset=crd-$[[ inputs.applyset ]] \
+      --force-conflicts \
+      --server-side \
+      --context=$[[ inputs.kube_context ]] \
+      --validate=false \
+      -f $[[ inputs.manifest ]]
   allow_failure: true
   tags:
     - gitlab-org-docker
