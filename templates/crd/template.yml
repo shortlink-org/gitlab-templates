@@ -25,10 +25,15 @@ crd_apply:
   script:
     - export KUBECTL_APPLYSET=true
     - echo "Applying CRDs with applyset=crd-$[[ inputs.applyset ]]"
-    - kubectl apply -n default --prune \
-      --applyset="crd-$[[ inputs.applyset ]]" \
-      --force-conflicts --server-side \
-      --context="$[[ inputs.kube_context ]]" \
-      --validate=false -f "$[[ inputs.manifest ]]"
+    - |
+      kubectl apply \
+        -n default \
+        --prune \
+        --applyset="crd-$[[ inputs.applyset ]]" \
+        --force-conflicts \
+        --server-side \
+        --context="$[[ inputs.kube_context ]]" \
+        --validate=false \
+        -f "$[[ inputs.manifest ]]"
   tags:
     - gitlab-org-docker
