@@ -26,14 +26,14 @@ crd_apply:
     - export KUBECTL_APPLYSET=true
     - echo "Applying CRDs with applyset=crd-$[[ inputs.applyset ]]"
     - |
-      kubectl apply \
-        -n default \
-        --prune \
-        --applyset=crd-$[[ inputs.applyset ]] \
-        --force-conflicts \
-        --server-side \
-        --context="$[[ inputs.kube_context ]]" \
-        --validate=false \
+      kubectl apply 
+        -n default 
+        --prune 
+        --applyset="crd-$[[ inputs.applyset ]]" 
+        --force-conflicts 
+        --server-side 
+        --context="$[[ inputs.kube_context ]]" 
+        --validate=false 
         -f "$[[ inputs.manifest ]]"
   allow_failure: true
   tags:
