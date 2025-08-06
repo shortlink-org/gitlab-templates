@@ -1,0 +1,80 @@
+include:
+  - component: $CI_SERVER_FQDN/shortlink-org/gitlab-templates/pnpm_cache@main
+
+# ────────────────────────────────────────────────────────────────
+# PUBLISH PACKAGE TO GITLAB NPM REGISTRY  (provenance disabled)
+# ────────────────────────────────────────────────────────────────
+publish:npm:
+  stage: build
+  image: node:24-alpine
+
+  variables:
+    # Relative path to the package you want to publish
+    PACKAGE_PATH: "${PACKAGE_PATH:-.}"
+    # GitLab registry is private → provenance not supported
+    NPM_CONFIG_PROVENANCE: "false"
+
+  # ──────────────────────────────────────────────────────────────
+  # SETUP
+  # ──────────────────────────────────────────────────────────────
+  before_script:
+    # 1️⃣  authentication + minimal ~/.npmrc
+    - |
+      REG="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/npm/"
+      cat > ~/.npmrc <<EOF
+      @${CI_PROJECT_ROOT_NAMESPACE}:registry=$REG
+      //$CI_SERVER_HOST/api/v4/projects/${CI_PROJECT_ID}/packages/npm/:_authToken=$CI_JOB_TOKEN
+      always-auth=true
+      EOF
+      export NODE_AUTH_TOKEN="$CI_JOB_TOKEN"   # npm ≥ 9 fallback token
+
+    # 2️⃣  toolchain (pnpm via Corepack)
+    - corepack enable
+    - corepack prepare pnpm@latest --activate
+    - cd "$PACKAGE_PATH"
+
+  # ──────────────────────────────────────────────────────────────
+  # MAIN SCRIPT
+  # ──────────────────────────────────────────────────────────────
+  script: |
+    set -e
+
+    # ── 1. Decide VERSION & DIST_TAG ───────────────────────────
+    if printf '%s' "$CI_COMMIT_TAG" | grep -Eq '^v?[0-9]+\.[0-9]+\.[0-9]+(-.*)?$'; then
+      VERSION="${CI_COMMIT_TAG#v}"      # strip leading "v"
+      DIST_TAG="latest"
+    elif [ "$CI_COMMIT_BRANCH" = "main" ]; then
+      VERSION="0.$(date -u +%Y%m%d).$(date -u +%H%M%S)"   # 0.YYYYMMDD.HHMMSS
+      DIST_TAG="canary"
+    else
+      echo "⏩  Not a tag or main branch – skipping publish."
+      exit 0
+    fi
+    echo "📦  Candidate: $VERSION  (tag: $DIST_TAG)"
+
+    # ── 2. Skip if version already exists ──────────────────────
+    PKG=$(npm pkg get name --workspaces=false | tr -d '"')
+    REG="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/npm/"
+    if npm view "${PKG}@${VERSION}" --registry "$REG" >/dev/null 2>&1; then
+      echo "✔️  ${PKG}@${VERSION} already published."
+      exit 0
+    fi
+
+    # ── 3. Build (ensures tsc / vite available) ────────────────
+    pnpm install --frozen-lockfile
+    pnpm version --no-git-tag-version "$VERSION"
+    pnpm run build
+
+    # ── 4. Publish (provenance OFF) ────────────────────────────
+    npm publish --no-provenance \
+      --registry "$REG" \
+      --tag "$DIST_TAG" \
+      --ignore-scripts
+
+  # ──────────────────────────────────────────────────────────────
+  # WHEN TO RUN
+  # ──────────────────────────────────────────────────────────────
+  rules:
+    - if: '$CI_COMMIT_TAG'               # on version tags
+    - if: '$CI_COMMIT_BRANCH == "main"'  # or on main branch
+    - when: never
