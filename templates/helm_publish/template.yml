@@ -1,6 +1,6 @@
 include:
-  - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/common@main
-  - component: $CI_SERVER_FQDN/$CI_PROJECT_PATH/helm@main
+  - component: $CI_SERVER_FQDN/gitlab-templates/common@main
+  - component: $CI_SERVER_FQDN/gitlab-templates/helm@main
 
 stages:
   - .pre
