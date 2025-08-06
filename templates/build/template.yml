@@ -50,7 +50,12 @@ spec:
 
   script:
     # Copy environment file produced by your pipeline (optional)
-    - if [ -n "$UI_ENV" ]; then cp "$UI_ENV" .env.prod; fi
+    - |
+      if [ -n "$UI_ENV" ]; then
+        cp "$UI_ENV" .env.prod
+      else
+        echo "UI_ENV not set – skipping env prod copy."
+      fi
 
     - |
       # Build & push multi-arch image
