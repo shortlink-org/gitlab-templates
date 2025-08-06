@@ -4,10 +4,10 @@ spec:
       default: build
       description: "Define the stage this job will run in"
     docker_version:
-      default: "28.2.2"
+      default: "28.3.3"
       description: "Define the version of Docker to use"
     buildkit_version:
-      default: "v0.22.0"
+      default: "v0.26.1"
       description: "Define the version of BuildKit to use"
 ---
 
@@ -24,7 +24,7 @@ spec:
     FF_SCRIPT_SECTIONS: "true" # Enables GitLab's CI script sections for better multi-line script output
     DOCKER_BUILDKIT: 1
     DOCKER_CONTENT_TRUST: 1
-    DOCKER_BUILDX_VERSION: v0.24.0
+    DOCKER_BUILDX_VERSION: v0.26.1
     BUILDX_GIT_LABELS: 1
 
   id_tokens:
