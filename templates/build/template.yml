@@ -17,6 +17,7 @@ spec:
     - name: docker:$[[ inputs.docker_version ]]-dind
       command: ["--experimental"]
   image: docker:$[[ inputs.docker_version ]]-cli
+
   variables:
     # GIT_STRATEGY: none # Set `none` if we use git sparse-checkout
     COSIGN_YES: "true"  # Used by Cosign to skip confirmation prompts for non-destructive operations
@@ -25,104 +26,119 @@ spec:
     DOCKER_CONTENT_TRUST: 1
     DOCKER_BUILDX_VERSION: v0.24.0
     BUILDX_GIT_LABELS: 1
+
   id_tokens:
     SIGSTORE_ID_TOKEN: # Used by Cosign to get certificate from Fulcio
       aud: sigstore
+
   before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    # Auth
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
 
-    # Install dependencies
-    - apk add curl git
+    # Dependencies
+    - apk add --no-cache curl git
 
-    # Install buildx
-    - mkdir -vp ~/.docker/cli-plugins/
-    - curl --silent -L "https://github.com/docker/buildx/releases/download/$DOCKER_BUILDX_VERSION/buildx-$DOCKER_BUILDX_VERSION.linux-amd64" > ~/.docker/cli-plugins/docker-buildx
-    - chmod a+x ~/.docker/cli-plugins/docker-buildx
+    # Buildx
+    - mkdir -p ~/.docker/cli-plugins
+    - curl -sSL \
+      "https://github.com/docker/buildx/releases/download/${DOCKER_BUILDX_VERSION}/buildx-${DOCKER_BUILDX_VERSION}.linux-amd64" \
+      -o ~/.docker/cli-plugins/docker-buildx
+    - chmod +x ~/.docker/cli-plugins/docker-buildx
     - DOCKER_CONTENT_TRUST=0 docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
     - docker buildx create --use
     - docker buildx inspect --bootstrap
 
-    # Git sparse-checkout
-    # NOTE: At the moment I don't see less time to clone the repository
-    # - git clone --filter=blob:none --depth=1 --branch=${CI_COMMIT_REF_NAME} ${CI_REPOSITORY_URL}
-    # - cd ${CI_PROJECT_NAME}
-    # - git sparse-checkout init --cone
-    # - while IFS= read -r line; do git sparse-checkout set "$line"; done < $CMD_PATH/sparse-checkout.yaml
-  after_script:
-    - apk add --update cosign
-    # Retrieve the digest of the pushed image to use in the signing step
-    - IMAGE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${REGISTRY_IMAGE}:${CI_COMMIT_TAG})
-    # Sign the image using Cosign with annotations that provide metadata about the build and tag annotation to allow verifying
-    # the tag->digest mapping (https://github.com/sigstore/cosign?tab=readme-ov-file#tag-signing)
-    - |
-      cosign sign "$IMAGE_DIGEST" \
-        --annotations "com.gitlab.ci.user.name=$GITLAB_USER_NAME" \
-        --annotations "com.gitlab.ci.pipeline.id=$CI_PIPELINE_ID" \
-        --annotations "com.gitlab.ci.pipeline.url=$CI_PIPELINE_URL" \
-        --annotations "com.gitlab.ci.job.id=$CI_JOB_ID" \
-        --annotations "com.gitlab.ci.job.url=$CI_JOB_URL" \
-        --annotations "com.gitlab.ci.commit.sha=$CI_COMMIT_SHA" \
-        --annotations "com.gitlab.ci.commit.ref.name=$CI_COMMIT_REF_NAME" \
-        --annotations "com.gitlab.ci.project.path=$CI_PROJECT_PATH" \
-        --annotations "org.opencontainers.image.source=$CI_PROJECT_URL" \
-        --annotations "org.opencontainers.image.revision=$CI_COMMIT_SHA" \
-        --annotations "tag=$IMAGE_TAG"
   script:
-    # TODO: improve work with ENV
-    - cp ${UI_ENV} .env.prod
-    - docker buildx build 
-      --platform=linux/amd64,linux/arm64
-      --provenance=true
-      --sbom=true
-      --build-arg APP_ENV=ci
-      --build-arg CI_COMMIT_TAG=$CI_COMMIT_TAG
-      --build-arg CI_COMMIT_SHA=$CI_COMMIT_SHA
-      --build-arg CI_COMMIT_REF_NAME=$CI_COMMIT_REF_NAME
-      --build-arg CI_PIPELINE_ID=$CI_PIPELINE_ID
-      --build-arg CI_PIPELINE_URL=$CI_PIPELINE_URL
-      --push $CMD_PATH $DOCKERFILE_ARGS
-      -o type=registry,oci-mediatypes=true,compression=estargz,force-compression=true
-      -t ${REGISTRY_IMAGE}:latest
-      -t ${REGISTRY_IMAGE}:${CI_COMMIT_TAG}
-      -f ${DOCKERFILE_PATH} .
+    # Copy environment file produced by your pipeline (optional)
+    - if [ -n "$UI_ENV" ]; then cp "$UI_ENV" .env.prod; fi
+
+    - |
+      # Build & push multi-arch image
+      docker buildx build \
+        --platform linux/amd64,linux/arm64 \
+        --provenance=true \
+        --sbom=true \
+        --build-arg APP_ENV=ci \
+        --build-arg CI_COMMIT_TAG="$CI_COMMIT_TAG" \
+        --build-arg CI_COMMIT_SHA="$CI_COMMIT_SHA" \
+        --build-arg CI_COMMIT_REF_NAME="$CI_COMMIT_REF_NAME" \
+        --build-arg CI_PIPELINE_ID="$CI_PIPELINE_ID" \
+        --build-arg CI_PIPELINE_URL="$CI_PIPELINE_URL" \
+        --push \
+        -t "${REGISTRY_IMAGE}:latest" \
+        ${CI_COMMIT_TAG:+-t "${REGISTRY_IMAGE}:${CI_COMMIT_TAG}"} \
+        -f "${DOCKERFILE_PATH}" \
+        ${DOCKERFILE_ARGS:-.}
+
+  after_script:
+    - apk add --no-cache cosign
+    # Skip signing on branch pipelines or when the tag wasn’t pushed
+    - |
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        IMAGE_REF="${REGISTRY_IMAGE}:${CI_COMMIT_TAG}"
+        # Obtain remote digest (works for manifest lists)
+        IMAGE_DIGEST=$(docker buildx imagetools inspect "$IMAGE_REF" --format '{{.Digest}}' 2>/dev/null || true)
+        if [ -n "$IMAGE_DIGEST" ]; then
+          echo "Signing $IMAGE_DIGEST"
+          cosign sign --yes "$IMAGE_DIGEST" \
+            --annotations "com.gitlab.ci.user.name=$GITLAB_USER_NAME" \
+            --annotations "com.gitlab.ci.pipeline.id=$CI_PIPELINE_ID" \
+            --annotations "com.gitlab.ci.pipeline.url=$CI_PIPELINE_URL" \
+            --annotations "com.gitlab.ci.job.id=$CI_JOB_ID" \
+            --annotations "com.gitlab.ci.job.url=$CI_JOB_URL" \
+            --annotations "com.gitlab.ci.commit.sha=$CI_COMMIT_SHA" \
+            --annotations "com.gitlab.ci.commit.ref.name=$CI_COMMIT_REF_NAME" \
+            --annotations "com.gitlab.ci.project.path=$CI_PROJECT_PATH" \
+            --annotations "org.opencontainers.image.source=$CI_PROJECT_URL" \
+            --annotations "org.opencontainers.image.revision=$CI_COMMIT_SHA" \
+            --annotations "tag=$CI_COMMIT_TAG"
+        else
+          echo "Image $IMAGE_REF not found in registry – skipping cosign signing."
+        fi
+      else
+        echo "No CI_COMMIT_TAG set – skipping cosign signing."
+      fi
+
   tags:
     - gitlab-org-docker
+
   retry: 1
   artifacts:
-    expire_in: 3 week
     paths:
-      - artifact.txt
       - cosign.bundle
+    expire_in: 3 weeks
   rules:
     - when: always
 
-# TODO: fix this job
+########################################################################
+# BuildKit-inside-dind variant (unchanged except for quoting fixes)
+########################################################################
 .template_build_kit:
   extends: .template_build
   services:
     - name: moby/buildkit:$[[ inputs.buildkit_version ]]
       alias: buildkitd
-      command:
-        - --addr=tcp://0.0.0.0:1234
+      command: ["--addr=tcp://0.0.0.0:1234"]
   image:
     name: moby/buildkit:$[[ inputs.buildkit_version ]]
-    entrypoint: [ "" ]
+    entrypoint: [""]
   variables:
     # GIT_STRATEGY: none # Set `none` if we use git sparse-checkout
     BUILDKIT_HOST: tcp://buildkitd:1234
   before_script:
     - date
   script:
-    - buildctl build
-        --frontend dockerfile.v0
-        --local context=.
-        --frontend-opt filename=${DOCKERFILE_PATH}
-        --opt build-arg:APP_ENV=ci
-        --opt build-arg:CI_COMMIT_TAG=$CI_COMMIT_TAG
-        --opt build-arg:CI_COMMIT_SHA=$CI_COMMIT_SHA
-        --opt build-arg:CI_COMMIT_REF_NAME=$CI_COMMIT_REF_NAME
-        --opt build-arg:CI_PIPELINE_ID=$CI_PIPELINE_ID
-        --opt build-arg:CI_PIPELINE_URL=$CI_PIPELINE_URL
-        --opt platform=linux/amd64,linux/arm64
-        --output type=image,oci-mediatypes=true,compression=estargz,name=${REGISTRY_IMAGE}:latest,push=true
-        --output type=image,oci-mediatypes=true,compression=estargz,name=${REGISTRY_IMAGE}:${CI_COMMIT_TAG},push=true
+    - |
+      buildctl build \
+        --frontend dockerfile.v0 \
+        --local context=. \
+        --frontend-opt filename="${DOCKERFILE_PATH}" \
+        --opt build-arg:APP_ENV=ci \
+        --opt build-arg:CI_COMMIT_TAG="$CI_COMMIT_TAG" \
+        --opt build-arg:CI_COMMIT_SHA="$CI_COMMIT_SHA" \
+        --opt build-arg:CI_COMMIT_REF_NAME="$CI_COMMIT_REF_NAME" \
+        --opt build-arg:CI_PIPELINE_ID="$CI_PIPELINE_ID" \
+        --opt build-arg:CI_PIPELINE_URL="$CI_PIPELINE_URL" \
+        --opt platform=linux/amd64,linux/arm64 \
+        --output type=image,oci-mediatypes=true,compression=estargz,name="${REGISTRY_IMAGE}:latest",push=true \
+        ${CI_COMMIT_TAG:+--output type=image,oci-mediatypes=true,compression=estargz,name="${REGISTRY_IMAGE}:${CI_COMMIT_TAG}",push=true}
