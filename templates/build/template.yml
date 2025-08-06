@@ -40,8 +40,7 @@ spec:
 
     # Buildx
     - mkdir -p ~/.docker/cli-plugins
-    - curl -sSL \
-      "https://github.com/docker/buildx/releases/download/${DOCKER_BUILDX_VERSION}/buildx-${DOCKER_BUILDX_VERSION}.darwin-amd64" \
+    - curl -sSL "https://github.com/docker/buildx/releases/download/${DOCKER_BUILDX_VERSION}/buildx-${DOCKER_BUILDX_VERSION}.linux-amd64" \
       -o ~/.docker/cli-plugins/docker-buildx
     - chmod +x ~/.docker/cli-plugins/docker-buildx
     - DOCKER_CONTENT_TRUST=0 docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
