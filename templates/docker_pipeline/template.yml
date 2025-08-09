@@ -1,6 +1,6 @@
 include:
-  - local: $CI_SERVER_FQDN/shortlink-org/gitlab-templates/common@main
-  - local: $CI_SERVER_FQDN/shortlink-org/gitlab-templates/docker_build@main
+  - local: /templates/common
+  - local: /templates/docker_build
   - component: $CI_SERVER_FQDN/components/container-scanning/container-scanning@main
 
 stages:
