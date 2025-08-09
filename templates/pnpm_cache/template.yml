@@ -1,4 +1,4 @@
-.cache:
+.pnpm_cache:
   cache:
     key:
       files:
