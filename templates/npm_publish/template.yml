@@ -1,5 +1,5 @@
 include:
-  - local: /templates/pnpm_cache
+  - local: /templates/pnpm_cache/template.yml
 
 # ────────────────────────────────────────────────────────────────
 # PUBLISH PACKAGE TO GITLAB NPM REGISTRY  (provenance disabled)

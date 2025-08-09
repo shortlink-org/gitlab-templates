@@ -1,6 +1,6 @@
 include:
-  - local: /templates/common
-  - local: /templates/docker_build
+  - local: /templates/common/template.yml
+  - local: /templates/docker_build/template.yml
   - component: $CI_SERVER_FQDN/components/container-scanning/container-scanning@main
 
 stages:

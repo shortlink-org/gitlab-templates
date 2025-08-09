@@ -1,6 +1,6 @@
 include:
-  - local: /templates/common
-  - local: /templates/helm
+  - local: /templates/common/template.yml
+  - local: /templates/helm/template.yml
 
 stages:
   - .pre

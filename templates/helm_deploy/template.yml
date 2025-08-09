@@ -25,7 +25,7 @@ spec:
 ---
 
 include:
-  - local: /templates/helm
+  - local: /templates/helm/template.yml
 
 stages:
   - deploy
