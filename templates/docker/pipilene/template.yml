@@ -1,0 +1,68 @@
+include:
+  - component: $CI_SERVER_FQDN/shortlink-org/gitlab-templates/common@main
+  - component: $CI_SERVER_FQDN/shortlink-org/gitlab-templates/docker/build@main
+  - component: $CI_SERVER_FQDN/components/container-scanning/container-scanning@main
+
+stages:
+  - .pre
+  - build
+  - security
+
+# BUILD ================================================================================================================
+build:
+  extends:
+    - .template_build
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: on_success
+    - if: '$CI_COMMIT_BRANCH'
+      variables:
+        CI_COMMIT_TAG: "$CI_COMMIT_REF_SLUG"
+      when: on_success
+
+# TODO: fix this job
+# SECURITY =============================================================================================================
+# Read more about this feature here: https://docs.gitlab.com/ee/user/application_security/container_scanning/
+
+container_scanning:
+  stage: security
+  variables:
+    GIT_STRATEGY: fetch
+    DOCKERFILE_PATH: $DOCKERFILE_PATH
+  before_script:
+    - |
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        export DOCKER_IMAGE="$REGISTRY_IMAGE:$CI_COMMIT_TAG"
+      else
+        export DOCKER_IMAGE="$REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+      fi
+  needs:
+    - build
+
+# Verify the image signature using Cosign to ensure it matches the expected annotations and certificate identity
+verify_image:
+  stage: security
+  image: alpine:3.20
+  variables:
+    COSIGN_YES: "true"
+    FF_SCRIPT_SECTIONS: "true"
+  before_script:
+    - apk add --no-cache cosign docker jq
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - |
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        export IMAGE_TAG="$CI_COMMIT_TAG"
+      else
+        export IMAGE_TAG="$CI_COMMIT_REF_SLUG"
+      fi
+      export IMAGE_URI="$REGISTRY_IMAGE:$IMAGE_TAG"
+  needs:
+    - build
+  script:
+    - cosign verify \
+      --annotations "tag=$IMAGE_TAG" \
+      --certificate-identity "$CI_PROJECT_URL//.gitlab-ci.yml@refs/heads/$CI_COMMIT_REF_NAME" \
+      --certificate-oidc-issuer "$CI_SERVER_URL" \
+      "$IMAGE_URI" | jq .
+  allow_failure: true
+
