@@ -1,6 +1,6 @@
 include:
-  - component: $CI_SERVER_FQDN/shortlink-org/gitlab-templates/common@main
-  - component: $CI_SERVER_FQDN/shortlink-org/gitlab-templates/helm@main
+  - local: $CI_SERVER_FQDN/shortlink-org/gitlab-templates/common@main
+  - local: $CI_SERVER_FQDN/shortlink-org/gitlab-templates/helm@main
 
 stages:
   - .pre

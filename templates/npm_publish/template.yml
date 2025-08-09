@@ -1,5 +1,5 @@
 include:
-  - component: $CI_SERVER_FQDN/shortlink-org/gitlab-templates/pnpm_cache@main
+  - local: $CI_SERVER_FQDN/shortlink-org/gitlab-templates/pnpm_cache@main
 
 # ────────────────────────────────────────────────────────────────
 # PUBLISH PACKAGE TO GITLAB NPM REGISTRY  (provenance disabled)
