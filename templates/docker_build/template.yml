@@ -61,6 +61,7 @@ spec:
         --build-arg CI_COMMIT_REF_NAME="$CI_COMMIT_REF_SLUG" \
         --build-arg CI_PIPELINE_ID="$CI_PIPELINE_ID" \
         --build-arg CI_PIPELINE_URL="$CI_PIPELINE_URL" \
+        ${DOCKERFILE_ARGS:+$DOCKERFILE_ARGS} \
         --push \
         -t "${REGISTRY_IMAGE}:latest" \
         ${CI_COMMIT_TAG:+-t "${REGISTRY_IMAGE}:${CI_COMMIT_TAG}"} \
