@@ -1,0 +1,26 @@
+spec:
+  inputs:
+    stage:
+      default: .pre
+      description: "Define the stage this job will run in"
+    allow_failure:
+      default: true
+      description: "Whether to allow the job to fail without failing the pipeline"
+    artifacts_expire_in:
+      default: "14 days"
+      description: "How long to keep artifacts"
+---
+
+# Code intelligence generation for Go projects
+code_intelligence_go:
+  stage: $[[ inputs.stage ]]
+  image: sourcegraph/scip-go:latest
+  allow_failure: $[[ inputs.allow_failure ]]
+  script:
+    - lsif-go
+  artifacts:
+    reports:
+      lsif: dump.lsif
+    expire_in: $[[ inputs.artifacts_expire_in ]]
+  rules:
+    - when: manual # very long-running job, only run manually
