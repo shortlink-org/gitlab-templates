@@ -49,6 +49,7 @@ spec:
     - docker buildx inspect --bootstrap
 
   script:
+    - cd ${WORKDIR:-.}
     - |
       # Build & push multi-arch image
       docker buildx build \
