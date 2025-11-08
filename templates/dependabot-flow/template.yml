@@ -6,10 +6,13 @@ spec:
     stage:
       default: test
       description: "Define the stage this job will run in"
+    package_manager:
+      default: gomod
+      description: "Dependabot package manager identifier (e.g., gomod, npm_and_yarn)"
+    directory:
+      default: "/"
+      description: "Repository directory Dependabot should scan"
 ---
-
-variables:
-  SETTINGS__GITLAB_ACCESS_TOKEN: $CI_JOB_TOKEN
 
 .dependabot-gitlab:
   tags:
@@ -19,15 +22,16 @@ variables:
     entrypoint: [""]
   variables:
     GIT_STRATEGY: none
+    PACKAGE_MANAGER: "$[[ inputs.package_manager ]]"
     RAILS_ENV: production
     SECRET_KEY_BASE: key
-    PACKAGE_MANAGER: gomod
+    SETTINGS__GITLAB_ACCESS_TOKEN: "$CI_JOB_TOKEN"
     SETTINGS__GITLAB_URL: $CI_SERVER_URL
     SETTINGS__STANDALONE: "true"
     SETTINGS__LOG_COLOR: "true"
   script:
     - cd /home/dependabot/app
-    - bundle exec rake "dependabot:update[$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME,$PACKAGE_MANAGER,/]"
+    - bundle exec rake "dependabot:update[$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME,$PACKAGE_MANAGER,$[[ inputs.directory ]]]"
 
 dependabot:
   extends: .dependabot-gitlab

@@ -1,16 +1,25 @@
-variables:
-  DOCKER_DRIVER: overlay2
-  DOCKER_HOST: tcp://docker:2375
-
-  # This will instruct Docker not to start over TLS.
-  # DOCKER_TLS_CERTDIR: ""
-
-  PIPELINE_NAME: 'Shortlink pipeline'  # A default is not required.
+spec:
+  inputs:
+    docker_driver:
+      description: "Docker storage driver to use for DinD jobs"
+      default: overlay2
+    docker_host:
+      description: "Docker host address used by Docker CLI clients"
+      default: "tcp://docker:2375"
+    pipeline_name:
+      description: "Friendly name exposed to downstream jobs"
+      default: "Shortlink pipeline"
+---
 
 # DEFAULT ==============================================================================================================
 default:
+  variables:
+    DOCKER_DRIVER: "$[[ inputs.docker_driver ]]"
+    DOCKER_HOST: "$[[ inputs.docker_host ]]"
+    PIPELINE_NAME: "$[[ inputs.pipeline_name ]]"
+    # Set DOCKER_TLS_CERTDIR explicitly in your project if TLS-enabled DinD is required.
   services:
-    - name: docker:28.3.0-rc.1-dind
+    - name: docker:29.0.0-rc.2-dind
       command: ["--experimental"]
       alias: localhost # necessary for correct addressing to services running in docker
 

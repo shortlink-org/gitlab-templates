@@ -1,0 +1,58 @@
+spec:
+  inputs:
+    stage:
+      default: dast
+      description: "Stage where the DAST job executes"
+    target_url:
+      description: "Public URL of the application to scan (e.g., https://staging.example.com)"
+      type: string
+    full_scan:
+      default: false
+      description: "Enable the active scanner (true) or perform a passive scan (false)"
+      type: boolean
+    auth_url:
+      default: ""
+      description: "Login URL for authenticated scans (leave empty for unauthenticated scans)"
+    auth_username:
+      default: ""
+      description: "Username used for authentication during the scan"
+    auth_password:
+      default: ""
+      description: "Password used for authentication during the scan"
+    auth_username_field:
+      default: ""
+      description: "CSS selector or field name for the username field"
+    auth_password_field:
+      default: ""
+      description: "CSS selector or field name for the password field"
+    auth_submit_field:
+      default: ""
+      description: "CSS selector or field name for the login form submit action"
+    extra_headers:
+      default: ""
+      description: "Comma-separated list of additional request headers (NAME:VALUE) to send with each request"
+    allow_failure:
+      default: false
+      description: "Allow the DAST job to fail without failing the pipeline"
+      type: boolean
+---
+
+include:
+  - template: Security/DAST.gitlab-ci.yml
+
+dast:
+  stage: $[[ inputs.stage ]]
+  variables:
+    DAST_WEBSITE: "$[[ inputs.target_url ]]"
+    DAST_FULL_SCAN: "$[[ inputs.full_scan ]]"
+    DAST_AUTH_URL: "$[[ inputs.auth_url ]]"
+    DAST_USERNAME: "$[[ inputs.auth_username ]]"
+    DAST_PASSWORD: "$[[ inputs.auth_password ]]"
+    DAST_USERNAME_FIELD: "$[[ inputs.auth_username_field ]]"
+    DAST_PASSWORD_FIELD: "$[[ inputs.auth_password_field ]]"
+    DAST_SUBMIT_FIELD: "$[[ inputs.auth_submit_field ]]"
+    DAST_REQUEST_HEADERS: "$[[ inputs.extra_headers ]]"
+  allow_failure: $[[ inputs.allow_failure ]]
+  needs: []
+  rules:
+    - if: '$[[ inputs.target_url ]] != ""'

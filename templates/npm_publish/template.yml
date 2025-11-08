@@ -1,3 +1,13 @@
+spec:
+  inputs:
+    stage:
+      default: build
+      description: "Define the stage this job will run in"
+    package_path:
+      default: "."
+      description: "Relative path to the package to publish"
+---
+
 include:
   - local: /templates/pnpm_cache/template.yml
 
@@ -5,12 +15,11 @@ include:
 # PUBLISH PACKAGE TO GITLAB NPM REGISTRY  (provenance disabled)
 # ────────────────────────────────────────────────────────────────
 publish:npm:
-  stage: build
+  stage: $[[ inputs.stage ]]
   image: node:24-alpine
 
   variables:
-    # Relative path to the package you want to publish
-    PACKAGE_PATH: "${PACKAGE_PATH:-.}"
+    PACKAGE_PATH: "$[[ inputs.package_path ]]"
     # GitLab registry is private → provenance not supported
     NPM_CONFIG_PROVENANCE: "false"
 
