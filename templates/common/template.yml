@@ -13,15 +13,16 @@ spec:
 
 # DEFAULT ==============================================================================================================
 default:
-  variables:
-    DOCKER_DRIVER: "$[[ inputs.docker_driver ]]"
-    DOCKER_HOST: "$[[ inputs.docker_host ]]"
-    PIPELINE_NAME: "$[[ inputs.pipeline_name ]]"
-    # Set DOCKER_TLS_CERTDIR explicitly in your project if TLS-enabled DinD is required.
   services:
     - name: docker:29.0.0-rc.2-dind
       command: ["--experimental"]
       alias: localhost # necessary for correct addressing to services running in docker
+
+variables:
+  DOCKER_DRIVER: "$[[ inputs.docker_driver ]]"
+  DOCKER_HOST: "$[[ inputs.docker_host ]]"
+  PIPELINE_NAME: "$[[ inputs.pipeline_name ]]"
+  # Set DOCKER_TLS_CERTDIR explicitly in your project if TLS-enabled DinD is required.
 
 env:
   stage: .pre
