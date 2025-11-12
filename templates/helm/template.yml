@@ -8,11 +8,11 @@ spec:
 .job_template_helm:
   stage: $[[ inputs.stage ]]
   image:
-    name: alpine/helm:3.18
+    name: alpine/helm:3.19
     entrypoint: [""]
   variables:
     HELM_EXPERIMENTAL_OCI: 1
-    SOPS_VERSION: v3.10.2
+    SOPS_VERSION: v3.11.0
   before_script:
     - helm plugin install https://github.com/jkroepke/helm-secrets
     - apk update
