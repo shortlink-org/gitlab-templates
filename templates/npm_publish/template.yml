@@ -16,7 +16,7 @@ include:
 # ────────────────────────────────────────────────────────────────
 publish:npm:
   stage: $[[ inputs.stage ]]
-  image: node:24-alpine
+  image: node:25-alpine
 
   variables:
     PACKAGE_PATH: "$[[ inputs.package_path ]]"
