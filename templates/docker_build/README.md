@@ -18,7 +18,7 @@ include:
 | --- | --- | --- | --- |
 | `stage` | string | `build` | Stage assigned to `.template_build`. |
 | `docker_version` | string | `29.2` | Docker version for DinD and CLI images. |
-| `buildkit_version` | string | `v0.26.1` | BuildKit image version for the BuildKit variant. |
+| `buildkit_version` | string | `v0.31.1` | BuildKit image version for the BuildKit variant. |
 
 ### Provided jobs
 
