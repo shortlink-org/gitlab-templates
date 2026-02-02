@@ -26,7 +26,7 @@ variables:
 
 env:
   stage: .pre
-  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/alpine:3.22
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/alpine:3.23
   script:
     - env
   when: manual
