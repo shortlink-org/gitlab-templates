@@ -8,7 +8,7 @@ spec:
 .job_template_helm:
   stage: $[[ inputs.stage ]]
   image:
-    name: alpine/helm:3.19
+    name: alpine/helm:4.1
     entrypoint: [""]
   variables:
     HELM_EXPERIMENTAL_OCI: 1
