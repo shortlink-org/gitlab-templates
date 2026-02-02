@@ -42,7 +42,7 @@ container_scanning:
 # Verify the image signature using Cosign to ensure it matches the expected annotations and certificate identity
 verify_image:
   stage: security
-  image: alpine:3.23
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/alpine:3.23
   variables:
     COSIGN_YES: "true"
     FF_SCRIPT_SECTIONS: "true"

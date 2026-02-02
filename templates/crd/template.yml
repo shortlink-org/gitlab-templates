@@ -20,7 +20,7 @@ stages:
 crd_apply:
   stage: deploy
   image:
-    name: alpine/k8s:1.33.0      # pin digest in production
+    name: alpine/k8s:1.35.0      # pin digest in production
     entrypoint: [ "" ]
   script:
     - export KUBECTL_APPLYSET=true
