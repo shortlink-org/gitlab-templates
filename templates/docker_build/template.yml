@@ -4,7 +4,7 @@ spec:
       default: build
       description: "Define the stage this job will run in"
     docker_version:
-      default: "28.3.3"
+      default: "29.2"
       description: "Define the version of Docker to use"
     buildkit_version:
       default: "v0.26.1"

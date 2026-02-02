@@ -9,7 +9,7 @@ include:
   - component: gitlab.com/shortlink-org/gitlab-templates/docker_build@<version>
     inputs:
       stage: build
-      docker_version: "29.0.0-rc.2"
+      docker_version: "29.2"
 ```
 
 ### Inputs
@@ -17,7 +17,7 @@ include:
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
 | `stage` | string | `build` | Stage assigned to `.template_build`. |
-| `docker_version` | string | `28.3.3` | Docker version for DinD and CLI images. |
+| `docker_version` | string | `29.2` | Docker version for DinD and CLI images. |
 | `buildkit_version` | string | `v0.26.1` | BuildKit image version for the BuildKit variant. |
 
 ### Provided jobs
