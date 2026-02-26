@@ -22,12 +22,11 @@ spec:
   before_script:
     - apk add --no-cache bash curl git gnupg ca-certificates
 
-    # Import helm-secrets maintainer public PGP key (for helm plugin --verify)
+    # Import helm-secrets maintainer public PGP key (for Helm 4 plugin verification)
     - |
-      curl -sSL https://raw.githubusercontent.com/jkroepke/helm-secrets/main/.github/helm-secrets.asc \
-        | gpg --import
+      curl -fsSL https://github.com/jkroepke.gpg | gpg --batch --import
 
-    # (Optional) Show imported key info
+    # (Optional) Show imported public key info
     - gpg --list-keys --fingerprint
 
     # Install helm-secrets plugins (Helm 4 split plugins) with verification enabled
@@ -46,12 +45,16 @@ spec:
 
     # Install sops
     - |
-      curl -L \
+      curl -fsSL \
         "https://github.com/mozilla/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux.amd64" \
         -o /usr/local/bin/sops
       chmod +x /usr/local/bin/sops
 
-    # Import your private GPG key used by sops (expects file path or readable content)
-    - gpg --import "${GPG_TOKEN}"
+    # Import your private GPG key used by sops (GPG_TOKEN is a multiline text variable)
+    - |
+      echo "$GPG_TOKEN" | gpg --batch --import
+
+    # (Optional) Verify the private key is present
+    - gpg --list-secret-keys --keyid-format LONG
 
   retry: 1
