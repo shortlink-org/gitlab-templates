@@ -56,7 +56,7 @@ spec:
         -o /usr/local/bin/sops
       chmod +x /usr/local/bin/sops
 
-    # Import your private GPG key used by sops (GPG_TOKEN is a multiline text variable)
-    - echo "$GPG_TOKEN" | gpg --batch --import
+    # Import GPG key for decrypting secrets if provided (expects armored key in env var)
+    - gpg --batch --import "$GPG_TOKEN"
 
   retry: 1
