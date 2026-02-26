@@ -12,13 +12,46 @@ spec:
     entrypoint: [""]
   variables:
     HELM_EXPERIMENTAL_OCI: 1
-    SOPS_VERSION: v3.11.0
+
+    # sops
+    SOPS_VERSION: v3.12.1
+
+    # helm-secrets (Helm 4 installs from release .tgz archives)
+    HELM_SECRETS_VERSION: "4.7.4"
+
   before_script:
-    - helm plugin install https://github.com/jkroepke/helm-secrets
-    - apk update
-    - apk add --no-cache gnupg
-    # install SOPS
-    - curl -L https://github.com/mozilla/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux.amd64 -o /usr/local/bin/sops
-    - chmod +x /usr/local/bin/sops
-    - gpg --import ${GPG_TOKEN}
+    - apk add --no-cache bash curl git gnupg ca-certificates
+
+    # Import helm-secrets maintainer public PGP key (for helm plugin --verify)
+    - |
+      curl -sSL https://raw.githubusercontent.com/jkroepke/helm-secrets/main/.github/helm-secrets.asc \
+        | gpg --import
+
+    # (Optional) Show imported key info
+    - gpg --list-keys --fingerprint
+
+    # Install helm-secrets plugins (Helm 4 split plugins) with verification enabled
+    - |
+      helm plugin install \
+        "https://github.com/jkroepke/helm-secrets/releases/download/v${HELM_SECRETS_VERSION}/secrets-${HELM_SECRETS_VERSION}.tgz" \
+        --verify
+
+      helm plugin install \
+        "https://github.com/jkroepke/helm-secrets/releases/download/v${HELM_SECRETS_VERSION}/secrets-getter-${HELM_SECRETS_VERSION}.tgz" \
+        --verify
+
+      helm plugin install \
+        "https://github.com/jkroepke/helm-secrets/releases/download/v${HELM_SECRETS_VERSION}/secrets-post-renderer-${HELM_SECRETS_VERSION}.tgz" \
+        --verify
+
+    # Install sops
+    - |
+      curl -L \
+        "https://github.com/mozilla/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux.amd64" \
+        -o /usr/local/bin/sops
+      chmod +x /usr/local/bin/sops
+
+    # Import your private GPG key used by sops (expects file path or readable content)
+    - gpg --import "${GPG_TOKEN}"
+
   retry: 1
