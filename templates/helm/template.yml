@@ -12,24 +12,30 @@ spec:
     entrypoint: [""]
   variables:
     HELM_EXPERIMENTAL_OCI: 1
-
-    # sops
     SOPS_VERSION: v3.12.1
-
-    # helm-secrets (Helm 4 installs from release .tgz archives)
     HELM_SECRETS_VERSION: "4.7.4"
+    GNUPGHOME: /root/.gnupg
 
   before_script:
     - apk add --no-cache bash curl git gnupg ca-certificates
 
-    # Import helm-secrets maintainer public PGP key (for Helm 4 plugin verification)
+    # Ensure GNUPG home exists with correct perms (Helm verifier expects this path)
+    - mkdir -p "$GNUPGHOME"
+    - chmod 700 "$GNUPGHOME"
+
+    # Force legacy keyring file that Helm verification expects
+    - touch "$GNUPGHOME/pubring.gpg"
+    - chmod 600 "$GNUPGHOME/pubring.gpg"
+
+    # Import helm-secrets maintainer public key into the legacy keyring
     - |
-      curl -fsSL https://github.com/jkroepke.gpg | gpg --batch --import
+      curl -fsSL https://github.com/jkroepke.gpg \
+        | gpg --batch --no-default-keyring --keyring "$GNUPGHOME/pubring.gpg" --import
 
-    # (Optional) Show imported public key info
-    - gpg --list-keys --fingerprint
+    # (Optional) Show imported public key
+    - gpg --batch --no-default-keyring --keyring "$GNUPGHOME/pubring.gpg" --list-keys --fingerprint
 
-    # Install helm-secrets plugins (Helm 4 split plugins) with verification enabled
+    # Install helm-secrets plugins with verification enabled
     - |
       helm plugin install \
         "https://github.com/jkroepke/helm-secrets/releases/download/v${HELM_SECRETS_VERSION}/secrets-${HELM_SECRETS_VERSION}.tgz" \
@@ -51,10 +57,6 @@ spec:
       chmod +x /usr/local/bin/sops
 
     # Import your private GPG key used by sops (GPG_TOKEN is a multiline text variable)
-    - |
-      echo "$GPG_TOKEN" | gpg --batch --import
-
-    # (Optional) Verify the private key is present
-    - gpg --list-secret-keys --keyid-format LONG
+    - echo "$GPG_TOKEN" | gpg --batch --import
 
   retry: 1
