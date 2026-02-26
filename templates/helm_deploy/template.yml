@@ -61,7 +61,7 @@ deploy:
       helm secrets upgrade "${RELEASE_NAME}" "${HELM_PATH}" ${HELM_ARG} ${VALUE_FILES} \
         --kube-context="${KUBE_CONTEXT}" \
         --install \
-        --atomic \
+        --rollback-on-failure \
         --cleanup-on-fail \
         --wait-for-jobs \
         --namespace="${NAMESPACE}" \
