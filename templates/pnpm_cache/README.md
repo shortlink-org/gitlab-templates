@@ -11,7 +11,8 @@ include:
 build:
   extends: .pnpm_cache
   script:
-    - corepack enable
+    - PNPM_PACKAGE="$(node -p 'require("./package.json").packageManager || "pnpm@latest"')"
+    - npm install -g "$PNPM_PACKAGE"
     - pnpm install
 ```
 
@@ -19,4 +20,3 @@ build:
 
 - Adds `.pnpm-store` to the job cache, keyed by the lockfile so cache updates only when dependencies change.
 - Extend `.pnpm_cache` in jobs running pnpm commands to speed up installs.
-

@@ -37,10 +37,10 @@ publish:npm:
       EOF
       export NODE_AUTH_TOKEN="$CI_JOB_TOKEN"   # npm ≥ 9 fallback token
 
-    # 2️⃣  toolchain (pnpm via Corepack)
-    - corepack enable
-    - corepack prepare pnpm@latest --activate
+    # 2️⃣  toolchain (pnpm via packageManager, works on Node 25 images)
     - cd "$PACKAGE_PATH"
+    - PNPM_PACKAGE="$(node -p 'const pm = require("./package.json").packageManager || "pnpm@latest"; if (!pm.startsWith("pnpm@")) throw new Error("packageManager must be pnpm@<version>"); pm')"
+    - npm install -g "$PNPM_PACKAGE"
 
   # ──────────────────────────────────────────────────────────────
   # MAIN SCRIPT

@@ -22,7 +22,6 @@ include:
 ### Notes
 
 - Automatically configures `.npmrc` for the project namespace using `CI_JOB_TOKEN`.
-- Uses `pnpm` (via Corepack) to install, version, and build before publishing.
+- Installs the `pnpm` version declared in `package.json#packageManager`, which keeps the job compatible with Node 25 images that do not ship `corepack`.
 - Tag pipelines (`CI_COMMIT_TAG`) publish `latest`; pushes to `main` publish timestamped canary builds.
 - Safe to include alongside other components that prepare build artifacts or run tests.
-
